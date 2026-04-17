@@ -70,6 +70,7 @@ pub async fn execute_command(
         .args(&args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
+        .kill_on_drop(true) // タイムアウト時に自動でプロセスを終了させる
         .spawn()
         .map_err(|e| format!("CLI起動エラー: {} (パス: {})", e, cli_path))?;
 
@@ -128,8 +129,8 @@ pub async fn execute_command(
     let (status, stdout_raw, stderr_raw) = match timeout(Duration::from_secs(1800), execution).await {
         Ok(res) => res?,
         Err(_) => {
-            // タイムアウト時はプロセスを強制終了
-            let _ = child.kill().await;
+            // .kill_on_drop(true) により、このブロックが終了(futureがdrop)した時点で
+            // プロセスは自動的に強制終了されるばい
             return Err("実行タイムアウト (30分を超えました)".to_string());
         }
     };
