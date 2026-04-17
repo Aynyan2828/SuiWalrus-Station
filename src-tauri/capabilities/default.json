@@ -1,0 +1,29 @@
+{
+  "identifier": "default",
+  "description": "SuiWalrus Station default capabilities",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "shell:allow-execute",
+    "shell:allow-spawn",
+    "shell:allow-stdin-write",
+    "shell:allow-kill",
+    "shell:allow-open",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "sui-cli",
+          "cmd": "C:\\ProgramData\\chocolatey\\bin\\sui",
+          "args": true
+        },
+        {
+          "name": "walrus-cli",
+          "cmd": "C:\\ProgramData\\walrus\\walrus",
+          "args": true
+        }
+      ]
+    }
+  ]
+}
