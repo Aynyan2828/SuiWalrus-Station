@@ -337,5 +337,30 @@ body {
 .log-time { color: var(--color-text-muted); opacity: 0.6; min-width: 60px; }
 .log-source { color: var(--color-sui); font-weight: 600; min-width: 70px; }
 .log-message { color: var(--color-text-secondary); word-break: break-all; }
-.log-entry.error .log-message { color: var(--color-error); }
 .log-entry.warn .log-message { color: var(--color-warning); }
+
+/* --- CLI Output Area --- */
+.cli-output {
+  background: rgba(0, 0, 0, 0.4);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--color-text-secondary);
+  max-height: 500px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.section-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 24px;
+}

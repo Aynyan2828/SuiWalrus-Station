@@ -118,9 +118,18 @@ export function ExecutionConsole() {
             <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Waiting for output...</div>
           ) : (
             activeExecution.logs.map((log, i) => (
-              <div key={i} style={{ marginBottom: '2px', wordBreak: 'break-all', display: 'flex', gap: 10 }}>
-                <span style={{ color: 'var(--color-text-muted)', minWidth: 45, opacity: 0.5 }}>[{log.timestamp.split('T')[1].split('.')[0]}]</span>
-                <span style={{ color: log.level === 'stderr' ? 'var(--color-error)' : 'inherit' }}>{log.message}</span>
+              <div key={i} style={{ marginBottom: '4px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ color: 'var(--color-text-muted)', minWidth: 65, opacity: 0.5, fontSize: '10px', paddingTop: '2px' }}>
+                  [{log.timestamp.split('T')[1].split('.')[0]}]
+                </span>
+                <span style={{ 
+                  color: log.level === 'stderr' ? 'var(--color-error)' : 'inherit',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
+                  flex: 1
+                }}>
+                  {log.message}
+                </span>
               </div>
             ))
           )}
