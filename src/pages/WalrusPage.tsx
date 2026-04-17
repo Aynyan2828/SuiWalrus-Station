@@ -139,6 +139,9 @@ export function WalrusPage() {
     const commandStr = `${cliName} ${args.map(quoteArg).join(' ')}`;
 
     addLog('info', cliName, `$ ${commandStr}`, { cli_path: cliPath });
+    if (cliType === 'site-builder') {
+      addLog('warn', 'Walrus', '🚀 サイトの処理を開始したばい！ファイル数が多いと数分〜数十分かかることがあるけん、そのまま待っとってね。');
+    }
 
     try {
       const result = await executeCommand(

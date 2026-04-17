@@ -86,7 +86,7 @@ pub async fn execute_command(
         Ok::<(std::process::ExitStatus, String, String), String>((status, stdout_raw, stderr_raw))
     };
 
-    let (status, stdout_raw, stderr_raw) = match timeout(Duration::from_secs(120), execution).await {
+    let (status, stdout_raw, stderr_raw) = match timeout(Duration::from_secs(1800), execution).await {
         Ok(res) => res?,
         Err(_) => {
             // タイムアウト時はプロセスを強制終了
