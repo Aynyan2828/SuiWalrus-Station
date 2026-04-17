@@ -82,15 +82,15 @@ async function callAiApi(
 
   try {
     const data = await invoke<any>('call_ai_api', {
-      base_url: settings.ai_base_url,
-      api_key: settings.ai_api_key,
+      baseUrl: settings.ai_base_url,
+      apiKey: settings.ai_api_key,
       model: settings.ai_model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 500,
+      maxTokens: 500,
     });
 
     const content = data.choices?.[0]?.message?.content || '';
@@ -127,11 +127,11 @@ export async function testAiConnection(settings: AppSettings): Promise<{ success
 
   try {
     const data = await invoke<any>('call_ai_api', {
-      base_url: settings.ai_base_url,
-      api_key: settings.ai_api_key,
+      baseUrl: settings.ai_base_url,
+      apiKey: settings.ai_api_key,
       model: settings.ai_model,
       messages: [{ role: 'user', content: 'Say "OK" if you can hear me.' }],
-      max_tokens: 10,
+      maxTokens: 10,
     });
 
     if (data.choices && data.choices.length > 0) {
