@@ -13,6 +13,7 @@ import * as walrusService from '../services/walrus-service';
 import * as suinsService from '../services/suins-service';
 import * as localSiteService from '../services/local-site-service';
 import { checkCliConnection } from '../services/cli-runner';
+import { listen } from '@tauri-apps/api/event';
 import type { WalrusBlobInfo } from '../types';
 
 // ==========================================
@@ -48,6 +49,13 @@ export interface AppState {
   aiMode: AiMode;
   // トースト通知
   toasts: ToastMessage[];
+  // リアルタイム実行ログ
+  activeExecution: {
+    command: string;
+    logs: { message: string, level: 'stdout' | 'stderr', timestamp: string }[];
+    isExecuting: boolean;
+    status: 'running' | 'success' | 'error' | null;
+  } | null;
 }
 
 const initialState: AppState = {
@@ -81,6 +89,7 @@ const initialState: AppState = {
   error: null,
   aiMode: 'guard',
   toasts: [],
+  activeExecution: null,
 };
 
 // ==========================================
@@ -107,7 +116,10 @@ type Action =
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'SET_AI_MODE'; mode: AiMode }
   | { type: 'ADD_TOAST'; toast: ToastMessage }
-  | { type: 'REMOVE_TOAST'; id: string };
+  | { type: 'REMOVE_TOAST'; id: string }
+  | { type: 'START_EXECUTION'; command: string }
+  | { type: 'ADD_REALTIME_LOG'; log: { message: string, level: 'stdout' | 'stderr' } }
+  | { type: 'END_EXECUTION'; status: 'success' | 'error' };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -153,6 +165,35 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, toasts: [...state.toasts, action.toast] };
     case 'REMOVE_TOAST':
       return { ...state, toasts: state.toasts.filter(t => t.id !== action.id) };
+    case 'START_EXECUTION':
+      return {
+        ...state,
+        activeExecution: {
+          command: action.command,
+          logs: [],
+          isExecuting: true,
+          status: 'running'
+        }
+      };
+    case 'ADD_REALTIME_LOG':
+      if (!state.activeExecution) return state;
+      return {
+        ...state,
+        activeExecution: {
+          ...state.activeExecution,
+          logs: [...state.activeExecution.logs.slice(-50), { ...action.log, timestamp: new Date().toISOString() }]
+        }
+      };
+    case 'END_EXECUTION':
+      if (!state.activeExecution) return state;
+      return {
+        ...state,
+        activeExecution: {
+          ...state.activeExecution,
+          isExecuting: false,
+          status: action.status
+        }
+      };
     default:
       return state;
   }
@@ -415,6 +456,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     init();
     return () => { mounted = false; };
+  }, []);
+
+  // リアルタイムログリスナーの登録
+  useEffect(() => {
+    const unlisten = listen<{ message: string, level: 'stdout' | 'stderr' }>('cli-realtime-log', (event) => {
+      dispatch({ type: 'ADD_REALTIME_LOG', log: event.payload });
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
   }, []);
 
   // 設定読み込み後に接続確認とウォレット取得

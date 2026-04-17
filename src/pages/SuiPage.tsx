@@ -48,8 +48,20 @@ export function SuiPage() {
 
     addLog('info', 'Sui', `$ ${commandStr}`, { cli_path: state.settings.sui_cli_path });
 
+    // リアルタイム実況コンソールの開始
+    dispatch({ type: 'START_EXECUTION', command: commandStr });
+
     try {
-      const result = await executeCommand('sui', args, state.settings.sui_cli_path);
+      const result = await executeCommand(
+        'sui', 
+        args, 
+        state.settings.sui_cli_path,
+        state.settings.walrus_cli_path,
+        state.settings.site_builder_cli_path
+      );
+
+      // 実況コンソールの終了通知
+      dispatch({ type: 'END_EXECUTION', status: result.success ? 'success' : 'error' });
 
       setLastOutput(result.success ? result.stdout : result.stderr);
       addLog(

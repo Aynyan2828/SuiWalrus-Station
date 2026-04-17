@@ -7,6 +7,7 @@ import { Sidebar } from './components/Layout/Sidebar';
 import { Header } from './components/Layout/Header';
 import { LogPanel } from './components/Layout/LogPanel';
 import { ToastContainer } from './components/ToastContainer';
+import { ExecutionConsole } from './components/ExecutionConsole';
 import { Dashboard } from './pages/Dashboard';
 import { WalletPage } from './pages/WalletPage';
 import { SuiPage } from './pages/SuiPage';
@@ -44,6 +45,7 @@ function AppContent() {
         <LogPanel />
       </div>
 
+      <ExecutionConsole />
       <ToastContainer />
 
       {state.isLoading && (

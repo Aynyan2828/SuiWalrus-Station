@@ -143,6 +143,9 @@ export function WalrusPage() {
       addLog('warn', 'Walrus', '🚀 サイトの処理を開始したばい！ファイル数が多いと数分〜数十分かかることがあるけん、そのまま待っとってね。');
     }
 
+    // リアルタイム実況コンソールの開始
+    dispatch({ type: 'START_EXECUTION', command: commandStr });
+
     try {
       const result = await executeCommand(
         cliType, 
@@ -151,6 +154,9 @@ export function WalrusPage() {
         state.settings.walrus_cli_path,
         state.settings.site_builder_cli_path
       );
+
+      // 実況コンソールの終了通知
+      dispatch({ type: 'END_EXECUTION', status: result.success ? 'success' : 'error' });
 
       setLastOutput(result.success ? result.stdout : result.stderr);
       

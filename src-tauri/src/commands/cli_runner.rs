@@ -20,6 +20,13 @@ pub struct CliResult {
     pub success: bool,
 }
 
+/// リアルタイムログ送信用のペイロード
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RealtimeLogPayload {
+    pub message: String,
+    pub level: String, // "stdout" | "stderr"
+}
+
 /// ANSIエスケープシーケンスを除去する
 fn strip_ansi(text: &str) -> String {
     let re = Regex::new(r"[\u001b\u009b][\[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]").unwrap();
@@ -29,6 +36,7 @@ fn strip_ansi(text: &str) -> String {
 /// 既存CLIを実行するコマンド (Tauri invoke用)
 #[tauri::command]
 pub async fn execute_command(
+    window: tauri::Window,
     cli_type: String,
     args: Vec<String>,
     sui_cli_path: Option<String>,
@@ -65,23 +73,54 @@ pub async fn execute_command(
         .spawn()
         .map_err(|e| format!("CLI起動エラー: {} (パス: {})", e, cli_path))?;
 
-    let mut stdout_handle = child.stdout.take().unwrap();
-    let mut stderr_handle = child.stderr.take().unwrap();
+    let stdout_handle = child.stdout.take().unwrap();
+    let stderr_handle = child.stderr.take().unwrap();
 
-    // タイムアウト付きで終了を待機 (デフォルト120秒)
-    let execution = async {
-        let mut stdout_buf = Vec::new();
-        let mut stderr_buf = Vec::new();
+    let window_clone = window.clone();
+    let window_clone2 = window.clone();
+
+    // タイムアウト付きで終了を待機 (デフォルト1800秒/30分)
+    let execution = async move {
+        use tokio::io::AsyncBufReadExt;
         
-        let (res_wait, res_stdout, res_stderr) = tokio::join!(
+        let mut stdout_reader = tokio::io::BufReader::new(stdout_handle).lines();
+        let mut stderr_reader = tokio::io::BufReader::new(stderr_handle).lines();
+
+        let stdout_loop = async {
+            let mut full_stdout = String::new();
+            while let Ok(Some(line)) = stdout_reader.next_line().await {
+                let clean_line = strip_ansi(&line);
+                let _ = window_clone.emit("cli-realtime-log", RealtimeLogPayload {
+                    message: clean_line,
+                    level: "stdout".to_string(),
+                });
+                full_stdout.push_str(&line);
+                full_stdout.push('\n');
+            }
+            full_stdout
+        };
+
+        let stderr_loop = async {
+            let mut full_stderr = String::new();
+            while let Ok(Some(line)) = stderr_reader.next_line().await {
+                let clean_line = strip_ansi(&line);
+                let _ = window_clone2.emit("cli-realtime-log", RealtimeLogPayload {
+                    message: clean_line,
+                    level: "stderr".to_string(),
+                });
+                full_stderr.push_str(&line);
+                full_stderr.push('\n');
+            }
+            full_stderr
+        };
+
+        let (res_wait, stdout_raw, stderr_raw) = tokio::join!(
             child.wait(),
-            stdout_handle.read_to_end(&mut stdout_buf),
-            stderr_handle.read_to_end(&mut stderr_buf)
+            stdout_loop,
+            stderr_loop
         );
 
         let status = res_wait.map_err(|e| e.to_string())?;
-        let stdout_raw = String::from_utf8_lossy(&stdout_buf).to_string();
-        let stderr_raw = String::from_utf8_lossy(&stderr_buf).to_string();
         
         Ok::<(std::process::ExitStatus, String, String), String>((status, stdout_raw, stderr_raw))
     };
@@ -91,7 +130,7 @@ pub async fn execute_command(
         Err(_) => {
             // タイムアウト時はプロセスを強制終了
             let _ = child.kill().await;
-            return Err("実行タイムアウト (120秒を超えました)".to_string());
+            return Err("実行タイムアウト (30分を超えました)".to_string());
         }
     };
 
