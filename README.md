@@ -94,7 +94,7 @@ To sustain development while ensuring user safety, we employ a success-based fee
    - [Sui CLI](https://docs.sui.io/guides/developer/getting-started/sui-install)
 2. **Setup**:
    ```bash
-   git clone https://github.com/CryptoArk/suiwalrus-station.git
+   git clone https://github.com/Aynyan2828/SuiWalrus-Station.git
    cd suiwalrus-station
    npm install
    cp .env.example .env
