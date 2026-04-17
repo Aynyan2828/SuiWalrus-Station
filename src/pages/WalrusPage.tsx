@@ -235,25 +235,38 @@ export function WalrusPage() {
   };
 
   const handlePreExecution = async (args: string[], cliType: 'sui' | 'walrus' | 'site-builder') => {
-    // 表示用・AI guard用（スペースがあればクォート）
     const cliName = cliType === 'site-builder' ? 'site-builder' : cliType;
     const cmdForAi = `${cliName} ${args.map(quoteArg).join(' ')}`;
 
-    if (state.aiMode !== 'off') {
-      const result = await analyzeCommand(
-        cmdForAi, // 修正：クォート済みのコマンド文字列を渡す
-        cliType as any,
-        state.activeEnv,
-        state.activeAddress,
-        state.settings,
-      );
-      setAiResult(result);
+    // 速攻で実行中にする
+    setIsExecuting(true);
+    dispatch({ type: 'START_EXECUTION', command: cmdForAi });
+    addLog('info', 'AI Guard', `🧐 安全判定中ばい...: ${cmdForAi}`);
 
-      if (state.aiMode === 'guard' && result.risk_level !== 'low') {
-        setPendingCommand(args);
-        setPendingCliType(cliType);
-        setShowConfirm(true);
-        return;
+    if (state.aiMode !== 'off') {
+      try {
+        const result = await analyzeCommand(
+          cmdForAi,
+          cliType as any,
+          state.activeEnv,
+          state.activeAddress,
+          state.settings,
+        );
+        setAiResult(result);
+
+        if (state.aiMode === 'guard' && result.risk_level !== 'low') {
+          addLog('warn', 'AI Guard', `⚠️ 高リスク検知: ${result.reason}`);
+          setPendingCommand(args);
+          setPendingCliType(cliType);
+          setShowConfirm(true);
+          // この時点では実行は一旦停止（確認待ち）
+          dispatch({ type: 'END_EXECUTION', status: 'error' });
+          setIsExecuting(false);
+          return;
+        }
+        addLog('info', 'AI Guard', `✅ 安全確認完了 (リスク: ${result.risk_level})`);
+      } catch (err) {
+        addLog('warn', 'AI Guard', `⚠️ AI判定スキップ: ${err}`);
       }
     }
 
