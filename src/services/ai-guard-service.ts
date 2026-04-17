@@ -35,8 +35,10 @@ export async function analyzeCommand(
   }
 }
 
+import { invoke } from '@tauri-apps/api/core';
+
 /**
- * AI API を呼び出す（OpenAI互換）
+ * AI API を呼び出す（Rustバックエンド経由）
  */
 async function callAiApi(
   command: string,
@@ -78,13 +80,10 @@ async function callAiApi(
 
 このコマンドを分析してJSON形式で回答してください。`;
 
-  const response = await fetch(`${settings.ai_base_url}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${settings.ai_api_key}`,
-    },
-    body: JSON.stringify({
+  try {
+    const data = await invoke<any>('call_ai_api', {
+      base_url: settings.ai_base_url,
+      api_key: settings.ai_api_key,
       model: settings.ai_model,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -92,35 +91,30 @@ async function callAiApi(
       ],
       temperature: 0.3,
       max_tokens: 500,
-    }),
-  });
+    });
 
-  if (!response.ok) {
-    throw new Error(`AI API エラー: ${response.status} ${response.statusText}`);
-  }
+    const content = data.choices?.[0]?.message?.content || '';
 
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content || '';
-
-  // JSONをパース
-  try {
-    // コードブロック内のJSONも対応
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]) as AiGuardResult;
+    // JSONをパース
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]) as AiGuardResult;
+      }
+    } catch {
+      // パース失敗時はフォールバック
     }
-  } catch {
-    // パース失敗
-  }
 
-  // パースできない場合はデフォルト
-  return {
-    risk_level: 'medium',
-    summary: content.slice(0, 200),
-    explanation: content,
-    warnings: ['AI応答のパースに失敗しました'],
-    recommendation: '手動で確認してください',
-  };
+    return {
+      risk_level: 'medium',
+      summary: content.slice(0, 200),
+      explanation: content,
+      warnings: ['AI応答のパースに失敗しました'],
+      recommendation: '手動で確認してください',
+    };
+  } catch (error) {
+    throw new Error(`AI通信エラー: ${error}`);
+  }
 }
 
 /**
@@ -131,44 +125,22 @@ export async function testAiConnection(settings: AppSettings): Promise<{ success
     return { success: false, message: 'APIキーが入力されていません' };
   }
 
-  // タイムアウトを極めて長めに設定 (30分 = 1800秒)
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 1800000);
-
   try {
-    const response = await fetch(`${settings.ai_base_url}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${settings.ai_api_key}`,
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: settings.ai_model,
-        messages: [{ role: 'user', content: 'Say "OK" if you can hear me.' }],
-        max_tokens: 10,
-      }),
+    const data = await invoke<any>('call_ai_api', {
+      base_url: settings.ai_base_url,
+      api_key: settings.ai_api_key,
+      model: settings.ai_model,
+      messages: [{ role: 'user', content: 'Say "OK" if you can hear me.' }],
+      max_tokens: 10,
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      return { success: false, message: `エラー: ${response.status} ${response.statusText}` };
-    }
-
-    const data = await response.json();
     if (data.choices && data.choices.length > 0) {
-      return { success: true, message: '接続成功！AIからの応答を確認しました。' };
+      return { success: true, message: '接続成功！バックエンド経由でAIからの応答を確認したばい！' };
     }
 
     return { success: false, message: '応答にデータが含まれていません' };
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return { success: false, message: '接続タイムアウト（1800秒経過）。AIモデルのロードに非常に時間がかかっている可能性があります。' };
-    }
-    return { success: false, message: `通信エラー: ${error instanceof Error ? error.message : String(error)}` };
-  } finally {
-    clearTimeout(timeoutId);
+    return { success: false, message: `通信エラー（バックエンド経由）: ${error}` };
   }
 }
 

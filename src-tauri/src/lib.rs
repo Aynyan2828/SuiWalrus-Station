@@ -3,6 +3,7 @@ mod commands;
 use commands::cli_runner;
 use commands::settings;
 use commands::fs_utils;
+use commands::ai_proxy;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -20,6 +21,7 @@ pub fn run() {
             settings::load_wallet_metadata,
             settings::save_wallet_metadata,
             fs_utils::read_text_file,
+            ai_proxy::call_ai_api,
         ])
         .run(tauri::generate_context!())
         .expect("SuiWalrus Station の起動に失敗しました");
