@@ -1,10 +1,10 @@
+use tauri::Emitter;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use tokio::process::Command;
 use tokio::time::{timeout, Duration};
 use regex::Regex;
 use std::process::Stdio;
-use tokio::io::AsyncReadExt;
 
 /// CLI実行結果の構造体
 #[derive(Debug, Serialize, Deserialize, Clone)]
