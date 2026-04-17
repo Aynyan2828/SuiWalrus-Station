@@ -18,11 +18,11 @@ export async function executeCommand(
   siteBuilderCliPath?: string,
 ): Promise<CliResult> {
   return invoke<CliResult>('execute_command', {
-    cli_type: cliType,
+    cliType,
     args,
-    sui_cli_path: suiCliPath || undefined,
-    walrus_cli_path: walrusCliPath || undefined,
-    site_builder_cli_path: siteBuilderCliPath || undefined,
+    suiCliPath: suiCliPath || undefined,
+    walrusCliPath: walrusCliPath || undefined,
+    siteBuilderCliPath: siteBuilderCliPath || undefined,
   });
 }
 
@@ -36,8 +36,8 @@ export async function checkCliConnection(
   siteBuilderCliPath?: string,
 ): Promise<ConnectionStatus> {
   return invoke<ConnectionStatus>('check_cli_connection', {
-    sui_cli_path: suiCliPath || undefined,
-    walrus_cli_path: walrus_cli_path || undefined,
-    site_builder_cli_path: siteBuilderCliPath || undefined,
+    suiCliPath: suiCliPath || undefined,
+    walrusCliPath: walrus_cli_path || undefined,
+    siteBuilderCliPath: siteBuilderCliPath || undefined,
   });
 }
