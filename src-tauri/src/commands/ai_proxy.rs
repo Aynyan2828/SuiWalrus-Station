@@ -53,22 +53,42 @@ pub async fn call_ai_api(
         "max_tokens": max_tokens.unwrap_or(500),
     });
 
-    let response = client
+    let response_result = client
         .post(&url)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
         .json(&payload)
         .send()
-        .await
-        .map_err(|e| format!("通信エラー: {}", e))?;
+        .await;
+
+    let response = match response_result {
+        Ok(res) => res,
+        Err(e) => {
+            let error_msg = if e.is_connect() {
+                format!("AI（Ollamaなど）に繋がらんばい。サービスが起動しとるか、URL ({}) が正しかかチェックしてね。", url)
+            } else if e.is_timeout() {
+                "タイムアウトばい。AIの応答が遅すぎるか、巨大なモデルのロードに時間がかかっとる可能性があるばい。".to_string()
+            } else {
+                format!("通信エラーばい: {}", e)
+            };
+            return Err(error_msg);
+        }
+    };
 
     let status = response.status();
-    let text = response.text().await.map_err(|e| format!("レスポンス読み取りエラー: {}", e))?;
-
     if !status.is_success() {
-        return Err(format!("AI API エラー ({}): {}", status, text));
+        let text = response.text().await.unwrap_or_default();
+        let friendly_msg = match status.as_u16() {
+            401 => "認証エラーばい。APIキーが間違っとらんか、空欄になっとらんか確認してね。".to_string(),
+            404 => "URLが見つからんばい。エンドポイントの綴りや、最後に /v1 が必要か確認してみてね。".to_string(),
+            429 => "リクエストが多すぎるばい。APIの利用制限にかかっとる可能性があるばい。".to_string(),
+            500..=599 => "AIサーバー側のエラーばい。ちょっと時間を置いて試してみて。".to_string(),
+            _ => format!("AI API からエラーが返ってきたばい ({}): {}", status, text),
+        };
+        return Err(friendly_msg);
     }
 
+    let text = response.text().await.map_err(|e| format!("レスポンス読み取りエラー: {}", e))?;
     let json_res: serde_json::Value = serde_json::from_str(&text)
         .map_err(|e| format!("JSONパースエラー: {}", e))?;
 

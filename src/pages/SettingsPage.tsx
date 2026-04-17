@@ -261,15 +261,31 @@ export function SettingsPage() {
             </button>
             {aiTestResult && (
               <div style={{ 
-                marginTop: 8, 
+                marginTop: 12, 
                 fontSize: 'var(--text-xs)', 
+                padding: '12px',
+                background: aiTestResult.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                border: `1px solid ${aiTestResult.success ? 'var(--color-success)' : 'var(--color-error)'}`,
+                borderRadius: 'var(--radius-md)',
                 color: aiTestResult.success ? 'var(--color-success)' : 'var(--color-error)',
-                fontWeight: 600,
-                padding: '8px 12px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                borderRadius: 'var(--radius-sm)'
               }}>
-                {aiTestResult.message}
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                  {aiTestResult.success ? '🎉 接続成功！' : '❌ 接続に失敗したばい'}
+                </div>
+                <div style={{ lineHeight: 1.5 }}>
+                  {aiTestResult.message}
+                </div>
+                {!aiTestResult.success && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px border rgba(239, 68, 68, 0.2)', opacity: 0.9 }}>
+                    <p style={{ fontWeight: 600, marginBottom: 4 }}>💡 以下の項目ば確認してみてね：</p>
+                    <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <li>URLの最後が <code style={{color: 'white'}}>/v1</code> になっとるか？</li>
+                      <li>Ollamaば使うなら、アプリが起動しとるか？</li>
+                      <li>OpenAIば使うなら、APIキーが正しいか？</li>
+                      <li>URLにタイポ（入力ミス）はなかか？</li>
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>
