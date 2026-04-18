@@ -17,7 +17,10 @@
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.7.0",
     "@tauri-apps/plugin-shell": "^2.0.0",
+    "@tradeport/sui-trading-sdk": "^0.4.64",
     "bn.js": "^5.2.3",
+    "graphql-request": "^7.4.0",
+    "lucide-react": "^1.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

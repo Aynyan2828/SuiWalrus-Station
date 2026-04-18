@@ -40,6 +40,11 @@ export interface AppSettings {
   ai_model: string;
   ai_mode: AiMode;
   log_level: string;
+  // Tradeport 連携設定
+  tradeport_enabled: boolean;
+  tradeport_api_key: string;
+  tradeport_api_user: string;
+  tradeport_agent_enabled: boolean;
 }
 
 /** AIモード */
@@ -151,7 +156,7 @@ export interface TemplateArg {
 }
 
 /** ページ定義 */
-export type Page = 'dashboard' | 'wallet' | 'sui' | 'sui-sdk' | 'ai-agent' | 'walrus' | 'history' | 'settings';
+export type Page = 'dashboard' | 'wallet' | 'sui' | 'tradeport' | 'sui-sdk' | 'ai-agent' | 'walrus' | 'history' | 'settings';
 
 /** Walrus blob情報 */
 export interface WalrusBlobInfo {

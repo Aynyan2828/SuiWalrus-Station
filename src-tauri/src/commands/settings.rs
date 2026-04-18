@@ -15,6 +15,11 @@ pub struct AppSettings {
     pub ai_model: String,
     pub ai_mode: String,
     pub log_level: String,
+    // Tradeport 連携設定
+    pub tradeport_enabled: bool,
+    pub tradeport_api_key: String,
+    pub tradeport_api_user: String,
+    pub tradeport_agent_enabled: bool,
 }
 
 impl Default for AppSettings {
@@ -30,6 +35,10 @@ impl Default for AppSettings {
             ai_model: "gpt-4o-mini".to_string(),
             ai_mode: "guard".to_string(),
             log_level: "info".to_string(),
+            tradeport_enabled: false,
+            tradeport_api_key: String::new(),
+            tradeport_api_user: String::new(),
+            tradeport_agent_enabled: false,
         }
     }
 }
@@ -91,19 +100,47 @@ fn get_wallet_metadata_file() -> PathBuf {
     get_settings_path().join("wallet_metadata.json")
 }
 
+impl AppSettings {
+    /// 環境変数によるオーバーライド（環境変数があればそれを優先する）
+    pub fn merge_with_env(&mut self) {
+        if let Ok(val) = std::env::var("SUI_CLI_PATH") { self.sui_cli_path = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("WALRUS_CLI_PATH") { self.walrus_cli_path = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("SITE_BUILDER_CLI_PATH") { self.site_builder_cli_path = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("AI_PROVIDER") { self.ai_provider = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("OPENAI_API_KEY") { self.ai_api_key = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("OPENAI_BASE_URL") { self.ai_base_url = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("OPENAI_MODEL") { self.ai_model = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("AI_DEFAULT_MODE") { self.ai_mode = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("LOG_LEVEL") { self.log_level = val.trim().to_string(); }
+        
+        // Tradeport 関連
+        if let Ok(val) = std::env::var("TRADEPORT_ENABLED") { 
+            self.tradeport_enabled = val.trim().to_lowercase() == "true"; 
+        }
+        if let Ok(val) = std::env::var("TRADEPORT_API_KEY") { self.tradeport_api_key = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("TRADEPORT_API_USER") { self.tradeport_api_user = val.trim().to_string(); }
+        if let Ok(val) = std::env::var("TRADEPORT_AGENT_ENABLED") { 
+            self.tradeport_agent_enabled = val.trim().to_lowercase() == "true"; 
+        }
+    }
+}
+
 /// 設定を読み込む
 #[tauri::command]
 pub async fn get_settings() -> Result<AppSettings, String> {
     let path = get_settings_file();
-    if path.exists() {
+    let mut settings = if path.exists() {
         let data = fs::read_to_string(&path)
             .map_err(|e| format!("設定ファイル読み込みエラー: {}", e))?;
-        let settings: AppSettings =
-            serde_json::from_str(&data).unwrap_or_default();
-        Ok(settings)
+        serde_json::from_str(&data).unwrap_or_default()
     } else {
-        Ok(AppSettings::default())
-    }
+        AppSettings::default()
+    };
+
+    // 環境変数があれば上書き
+    settings.merge_with_env();
+    
+    Ok(settings)
 }
 
 /// 設定を保存する

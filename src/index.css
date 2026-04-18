@@ -364,3 +364,103 @@ body {
   letter-spacing: 0.1em;
   margin-top: 24px;
 }
+/* --- Tradeport Market Specific --- */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.template-card {
+  background: var(--color-bg-card);
+  border: var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  transition: all var(--transition-slow);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.template-card:hover {
+  transform: translateY(-8px);
+  background: var(--color-bg-card-hover);
+  border-color: var(--color-sui);
+  box-shadow: var(--shadow-glow-sui);
+}
+
+.template-image-container {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.template-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.template-card:hover .template-image-container img {
+  transform: scale(1.1);
+}
+
+.template-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.template-desc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.price-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(0, 255, 170, 0.1);
+  border: 1px solid rgba(0, 255, 170, 0.2);
+  border-radius: 8px;
+  color: var(--color-walrus);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.trait-tag {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 10px;
+  transition: all 0.2s;
+}
+
+.trait-tag:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-sui);
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.premium-modal {
+  animation: float 4s ease-in-out infinite;
+}

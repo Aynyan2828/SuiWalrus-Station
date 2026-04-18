@@ -71,9 +71,12 @@ export async function executeAgentTask(
       const [coin] = tx.splitCoins(tx.gas, [0]);
       tx.transferObjects([coin], activeAddress);
     } else {
-      if (rule.strategy_type === 'deposit_to_navi') {
+       if (rule.strategy_type === 'deposit_to_navi') {
         console.log('[ExecutionDriver] Navi Protocol 連携の Deposit を試行します。');
         await buildNaviDepositPtb(tx, rule, activeAddress, activeEnv, executionAmount);
+      } else if (rule.strategy_type === 'buy_nft') {
+        console.log('[ExecutionDriver] Tradeport SDK を利用した NFT 購入を試行します。');
+        await buildBuyNftPtb(tx, rule, activeAddress, activeEnv);
       } else {
         console.log('[ExecutionDriver] Cetus アグリゲーターを通したSwapを試行します。');
         await buildSwapPtb(tx, rule, activeAddress, activeEnv, executionAmount);
@@ -197,6 +200,33 @@ async function buildNaviDepositPtb(tx: any, rule: AgentRule, activeAddress: stri
   );
 
   console.log('[Navi] Deposit PTB 構築完了');
+}
+
+/**
+ * Tradeport SDK を利用して PTB に NFT 購入ロジックを組み込む
+ */
+async function buildBuyNftPtb(tx: any, rule: AgentRule, activeAddress: string, activeEnv: string) {
+  const { TradeportClient } = await import('@tradeport/sui-trading-sdk');
+  
+  if (!rule.nft_id) {
+    throw new Error('NFT購入には NFT ID が必要です。');
+  }
+
+  console.log(`[Tradeport] NFT購入 PTB 構築中... NFT: ${rule.nft_id}`);
+
+  // Tradeport Client 初期化（APIキー等は不要でPTB構築可能）
+  const client = new TradeportClient();
+
+  // SDKを利用して PTB に購入命令を追加
+  // 注: SDKの仕様に合わせ、適切なメソッド（buy等）を呼び出し
+  await client.buy({
+    txb: tx,
+    nftId: rule.nft_id,
+    buyerAddress: activeAddress,
+    // 必要に応じて価格やマーケットプレイス指定を追加
+  });
+
+  console.log('[Tradeport] Buy NFT PTB 構築完了');
 }
 
 /**

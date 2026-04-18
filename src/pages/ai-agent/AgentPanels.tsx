@@ -156,34 +156,65 @@ const AGENT_EXAMPLES = [
   { label: '💰 利益確定', text: 'SUI が 1.5 ドルを超えたら、利益確定で 5 SUI を USDC に戻す' },
 ];
 
+import { TradeportService, TradeportCollection, TradeportNft } from '../../services/TradeportService';
+
 export function AgentChatPanel() {
   const { state: appState, addToast } = useAppState();
   const { addRule } = useAgentState();
   const [input, setInput] = useState('');
   const [parsing, setParsing] = useState(false);
   const [parsedRule, setParsedRule] = useState<Partial<AgentRule> | null>(null);
+  const [marketResult, setMarketResult] = useState<any>(null);
 
   const handleParse = async () => {
     if (!input.trim()) return;
+    if (!appState.settings.tradeport_enabled && input.toLowerCase().includes('nft')) {
+      addToast({ type: 'info', title: '設定確認', message: 'Tradeport連携がオフばい。設定画面から有効にしてね！' });
+    }
+
     setParsing(true);
     setParsedRule(null);
+    setMarketResult(null);
+
     try {
       const result = await parseIntentToRule(input, appState.settings);
       
-      // トークンの正規化（安全チェック）
-      if (result.source_token) {
-        const normSource = normalizeTokenSymbol(result.source_token);
-        if (!normSource) throw new Error(`未対応のソーストークンです: ${result.source_token}`);
-        result.source_token = normSource;
-      }
-      if (result.target_token) {
-        const normTarget = normalizeTokenSymbol(result.target_token);
-        if (!normTarget) throw new Error(`未対応のターゲットトークンです: ${result.target_token}`);
-        result.target_token = normTarget;
-      }
+      // モード判定
+      if (result.type === 'market_query') {
+        const queryType = result.query_type;
+        const term = result.search_term;
+        let data: any = null;
 
-      setParsedRule(result);
-      addToast({ type: 'success', title: '解析成功', message: 'ルール案を生成しました！確認してください。' });
+        if (queryType === 'collection_search') {
+          data = await TradeportService.searchCollections(term);
+        } else if (queryType === 'trending') {
+          data = await TradeportService.getTrendingCollections();
+        } else if (queryType === 'nft_detail' && result.nft_id) {
+          data = await TradeportService.getNftDetail(result.nft_id);
+        }
+        
+        setMarketResult({
+          query_type: queryType,
+          data: data,
+          explanation: result.explanation
+        });
+        addToast({ type: 'success', title: '調査完了', message: '情報を取ってきたばい！' });
+      } else {
+        // トークンの正規化（積立てルールの場合）
+        if (result.source_token) {
+          const normSource = normalizeTokenSymbol(result.source_token);
+          if (!normSource) throw new Error(`未対応のソーストークンです: ${result.source_token}`);
+          result.source_token = normSource;
+        }
+        if (result.target_token) {
+          const normTarget = normalizeTokenSymbol(result.target_token);
+          if (!normTarget) throw new Error(`未対応のターゲットトークンです: ${result.target_token}`);
+          result.target_token = normTarget;
+        }
+
+        setParsedRule(result);
+        addToast({ type: 'success', title: '解析成功', message: 'ルール案を生成しました！確認してください。' });
+      }
     } catch (e) {
       addToast({ type: 'error', title: '解析失敗', message: String(e) });
     } finally {
@@ -268,8 +299,8 @@ export function AgentChatPanel() {
       </div>
 
       {parsedRule && (
-        <div style={{ background: 'var(--color-bg-secondary)', padding: 'var(--space-md)', borderRadius: 'var(--radius-md)' }}>
-          <h4 style={{ margin: '0 0 var(--space-md) 0', color: 'var(--color-sui)' }}>✨ ルール案が生成されました</h4>
+        <div style={{ background: 'var(--color-bg-secondary)', padding: 'var(--space-md)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-walrus)' }}>
+          <h4 style={{ margin: '0 0 var(--space-md) 0', color: 'var(--color-walrus)' }}>✨ ルール案が生成されました</h4>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-sm)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-lg)' }}>
             <div><span style={{ color: 'var(--color-text-muted)' }}>戦略:</span> {parsedRule.strategy_type}</div>
@@ -281,7 +312,7 @@ export function AgentChatPanel() {
           </div>
           
           {preview && (
-            <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 16, border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <div style={{ padding: '12px', background: 'rgba(0, 255, 170, 0.05)', borderRadius: 8, marginBottom: 16, border: '1px dashed var(--color-walrus)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: 4 }}>
                 <span>💰 サービス手数料 ({preview.rateBps/100}% / 自動実行時のみ)</span>
                 <span style={{ color: 'var(--color-warning)' }}>- {preview.feeAmount} {parsedRule.source_token}</span>
@@ -290,9 +321,6 @@ export function AgentChatPanel() {
                 <span>🚀 実効積立額</span>
                 <span style={{ color: 'var(--color-success)' }}>{preview.netAmount} {parsedRule.source_token}</span>
               </div>
-              <p style={{ fontSize: '10px', color: 'var(--color-text-muted)', margin: '8px 0 0' }}>
-                ※ 手動実行時は手数料はかかりません。
-              </p>
             </div>
           )}
           
@@ -304,6 +332,38 @@ export function AgentChatPanel() {
               キャンセル
             </button>
           </div>
+        </div>
+      )}
+
+      {marketResult && (
+        <div style={{ background: 'var(--color-bg-secondary)', padding: 'var(--space-md)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-sui)' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+             <span style={{ fontSize: '24px' }}>🤖</span>
+             <div style={{ lineHeight: 1.4 }}>
+                <div style={{ fontWeight: 600, color: 'var(--color-sui)' }}>エージェントの調査報告書</div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>{marketResult.explanation}</div>
+             </div>
+           </div>
+
+           {marketResult.query_type === 'trending' || marketResult.query_type === 'collection_search' ? (
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, marginTop: 12 }}>
+                {marketResult.data?.slice(0, 6).map((c: any) => (
+                  <div key={c.id} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <img src={c.imageUrl} style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 6 }} alt={c.name} />
+                    <div style={{ fontSize: '11px', fontWeight: '600', marginTop: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-walrus)', marginTop: 2 }}>Floor: {c.floorPrice || 'N/A'} SUI</div>
+                  </div>
+                ))}
+             </div>
+           ) : (
+             <div style={{ color: 'var(--color-text-muted)', fontSize: '13px', padding: 20, textAlign: 'center' }}>
+                詳細なデータが見つからんかったばい...
+             </div>
+           )}
+
+           <button className="btn btn-ghost btn-sm" style={{ width: '100%', marginTop: 16 }} onClick={() => setMarketResult(null)}>
+              閉じる
+           </button>
         </div>
       )}
     </div>

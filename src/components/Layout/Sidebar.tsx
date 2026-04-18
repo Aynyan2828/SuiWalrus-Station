@@ -9,6 +9,7 @@ const NAV_ITEMS: { page: Page; icon: string; label: string; section?: string }[]
   { page: 'dashboard', icon: '📊', label: 'ダッシュボード', section: 'メイン' },
   { page: 'wallet', icon: '💼', label: 'ウォレット' },
   { page: 'sui', icon: '🔗', label: 'Sui 操作', section: 'ツール' },
+  { page: 'tradeport', icon: '🛒', label: 'Tradeport 連携' },
   { page: 'sui-sdk', icon: '⚡', label: 'Sui SDK' },
   { page: 'ai-agent', icon: '🤖', label: 'AI Agent' },
   { page: 'walrus', icon: '🐋', label: 'Walrus 操作' },

@@ -40,7 +40,8 @@
 Control your DeFi strategies through a conversational interface.
 - **Natural Language Parsing**: "Swap 2 USDC to SUI every day at 9 AM" — just say it, and it's done.
 - **Strategy CRUD**: Create, Update, Delete, and Toggle rules with ease.
-- **Protocol Integration**: Native support for **Cetus** (Swap) and **Navi Protocol** (Supply).
+- **Protocol Integration**: Native support for **Cetus** (Swap), **Navi Protocol** (Supply), and **Tradeport** (NFT Intelligence).
+- **NFT Autopilot**: "Buy this NFT for me" — AI handles the **Tradeport SDK** to execute complex NFT transactions.
 - **Price Triggers**: Automated trades based on **Pyth Network** oracle thresholds.
 - **Smart Scheduler**: Background automation with manual approval support for ultimate safety.
 
@@ -96,10 +97,12 @@ To sustain development while ensuring user safety, we employ a success-based fee
    ```bash
    git clone https://github.com/Aynyan2828/SuiWalrus-Station.git
    cd suiwalrus-station
-   npm install
+   npm install  # All SDKs (Cetus, Navi, Tradeport) are installed automatically!
    cp .env.example .env
-   # Edit .env with your Sui/Walrus CLI paths
    ```
+3. **Configuration**:
+   - Open `.env` and set your `VITE_OPENAI_API_KEY` and `VITE_TRADEPORT_API_KEY`.
+   - Ensure `VITE_SUI_CLI_PATH` points to your local `sui` executable.
 3. **Launch**:
    ```bash
    npm run tauri dev
@@ -135,7 +138,8 @@ To sustain development while ensuring user safety, we employ a success-based fee
 Suiのエコシステムばもっと身近に、もっと面白くしたかと思って魂込めて作っとるばい。
 世界中の人がこれば使って「Suiって最高やん！」って思ってくれたら、開発者冥利に尽きるっちゃん。🔥
 
-ばりばりフィードバックば待っとるけん、一緒に未来ば創っていこうばい！バリバリ！
+ばりばりフィードバックば待っとるけん、一緒に未来ば創っていこうばい！
+
 
 ---
 © 2026 CryptoArk / Aynyan2828. Built for the Sui community with 💙.

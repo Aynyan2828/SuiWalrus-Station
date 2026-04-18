@@ -40,7 +40,7 @@ export function SettingsPage() {
     }
   };
 
-  const update = (key: keyof AppSettings, value: string) => {
+  const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setLocalSettings({ ...localSettings, [key]: value });
   };
 
@@ -290,6 +290,67 @@ export function SettingsPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Tradeport 連携設定 */}
+      <div className="card" style={{ marginTop: 'var(--space-lg)' }}>
+        <h3 className="card-title">🛒 Tradeport 連携 (NFT Market)</h3>
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-md)' }}>
+          Tradeport Data API と Trading SDK を有効にします。NFTの検索や購入が可能になります。
+        </p>
+
+        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input 
+            type="checkbox" 
+            id="tradeport_enabled"
+            checked={localSettings.tradeport_enabled} 
+            onChange={e => update('tradeport_enabled', e.target.checked)} 
+          />
+          <style>{`
+            #tradeport_enabled { width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-walrus); }
+          `}</style>
+          <label htmlFor="tradeport_enabled" className="form-label" style={{ marginBottom: 0, cursor: 'pointer' }}>Tradeport 連携を有効にする</label>
+        </div>
+
+        {localSettings.tradeport_enabled && (
+          <div style={{ marginTop: 'var(--space-md)', padding: 'var(--space-md)', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="form-group">
+                <label className="form-label">Tradeport API Key</label>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  value={localSettings.tradeport_api_key} 
+                  onChange={e => update('tradeport_api_key', e.target.value)} 
+                  placeholder="x-api-key"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tradeport API User ID</label>
+                <input 
+                  className="form-input" 
+                  value={localSettings.tradeport_api_user} 
+                  onChange={e => update('tradeport_api_user', e.target.value)} 
+                  placeholder="x-api-user"
+                />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 'var(--space-sm)' }}>
+              <input 
+                type="checkbox" 
+                id="tradeport_agent_enabled"
+                checked={localSettings.tradeport_agent_enabled} 
+                onChange={e => update('tradeport_agent_enabled', e.target.checked)} 
+              />
+              <label htmlFor="tradeport_agent_enabled" className="form-label" style={{ marginBottom: 0, cursor: 'pointer', fontSize: 'var(--text-ms)' }}>AI エージェントにマーケット情報の利用を許可する</label>
+            </div>
+            
+            <p style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 8 }}>
+              ※ APIキーはローカルにのみ保存され、外部（GitHub等）に送信されることはありません。
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 検出パス情報 */}

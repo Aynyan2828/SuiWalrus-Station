@@ -15,6 +15,7 @@ import { WalrusPage } from './pages/WalrusPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SuiSdkPage } from './pages/sui-sdk/SuiSdkPage';
+import { TradeportMarketTab } from './pages/sui-sdk/TradeportMarketTab';
 import { AiAgentPage } from './pages/ai-agent/AiAgentPage';
 
 function AppContent() {
@@ -25,6 +26,7 @@ function AppContent() {
       case 'dashboard': return <Dashboard />;
       case 'wallet': return <WalletPage />;
       case 'sui': return <SuiPage />;
+      case 'tradeport': return <TradeportMarketTab />;
       case 'sui-sdk': return <SuiSdkPage />;
       case 'ai-agent': return <AiAgentPage />;
       case 'walrus': return <WalrusPage />;

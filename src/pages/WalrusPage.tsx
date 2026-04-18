@@ -255,7 +255,7 @@ export function WalrusPage() {
         setAiResult(result);
 
         if (state.aiMode === 'guard' && result.risk_level !== 'low') {
-          addLog('warn', 'AI Guard', `⚠️ 高リスク検知: ${result.reason}`);
+          addLog('warn', 'AI Guard', `⚠️ 高リスク検知: ${result.summary}`);
           setPendingCommand(args);
           setPendingCliType(cliType);
           setShowConfirm(true);

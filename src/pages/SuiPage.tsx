@@ -22,6 +22,7 @@ export function SuiPage() {
   const [pendingCommand, setPendingCommand] = useState<string[]>([]);
 
   const [activeTab, setActiveTab] = useState<string>('情報');
+  
   const categories = [...new Set(SUI_TEMPLATES.map(t => t.category))];
 
   // テンプレートからコマンド引数を構築
