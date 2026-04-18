@@ -69,8 +69,8 @@ export class TradeportService {
       imageUrl: this.ipfsToHttp(c.cover_url),
       description: c.description,
       verified: c.verified,
-      floorPrice: c.floor,
-      volume: c.volume,
+      floorPrice: this.formatSuiPrice(c.floor),
+      volume: this.formatSuiPrice(c.volume),
     })) || [];
   }
 
@@ -101,8 +101,8 @@ export class TradeportService {
       slug: c.slug,
       imageUrl: this.ipfsToHttp(c.cover_url),
       verified: c.verified,
-      floorPrice: c.floor,
-      volume: c.volume,
+      floorPrice: this.formatSuiPrice(c.floor),
+      volume: this.formatSuiPrice(c.volume),
     })) || [];
   }
 
@@ -113,7 +113,7 @@ export class TradeportService {
     const gqlQuery = `
       query GetNft($id: String!) {
         sui {
-          nft(id: $id) {
+          nfts(where: { id: { _eq: $id } }, limit: 1) {
             id
             title
             media_url
@@ -131,7 +131,7 @@ export class TradeportService {
     `;
 
     const resp = await this.callApi(gqlQuery, { id: nftId });
-    const n = resp?.data?.sui?.nft;
+    const n = resp?.data?.sui?.nfts?.[0];
     if (!n) return null;
 
     return {
