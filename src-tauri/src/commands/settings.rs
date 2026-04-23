@@ -116,9 +116,10 @@ impl AppSettings {
     pub fn merge_with_env(&mut self) {
         let update_if_env = |field: &mut String, env_name: &str| {
             if let Ok(val) = std::env::var(env_name) {
-                let trimmed = val.trim();
+                // クォーテーションを取り除いてトリミング
+                let trimmed = val.replace('"', "").trim().to_string();
                 if !trimmed.is_empty() {
-                    *field = trimmed.to_string();
+                    *field = trimmed;
                 }
             }
         };
@@ -135,7 +136,7 @@ impl AppSettings {
         
         // Tradeport 関連
         if let Ok(val) = std::env::var("TRADEPORT_ENABLED") { 
-            let trimmed = val.trim().to_lowercase();
+            let trimmed = val.replace('"', "").trim().to_lowercase();
             if !trimmed.is_empty() {
                 self.tradeport_enabled = trimmed == "true";
             }
@@ -143,7 +144,7 @@ impl AppSettings {
         update_if_env(&mut self.tradeport_api_key, "TRADEPORT_API_KEY");
         update_if_env(&mut self.tradeport_api_user, "TRADEPORT_API_USER");
         if let Ok(val) = std::env::var("TRADEPORT_AGENT_ENABLED") { 
-            let trimmed = val.trim().to_lowercase();
+            let trimmed = val.replace('"', "").trim().to_lowercase();
             if !trimmed.is_empty() {
                 self.tradeport_agent_enabled = trimmed == "true";
             }
