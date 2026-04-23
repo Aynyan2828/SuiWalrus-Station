@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAppState } from '../../store/app-store';
 import * as sdkService from '../../services/sui-sdk/sui-sdk-service';
 import { getAddressExplorerUrl } from '../../utils/explorer-utils';
+import { NaviService } from '../../services/navi/NaviService';
 
 export function StakingTab() {
   const { state, addLog, refreshWallets, addToast } = useAppState();
@@ -13,6 +14,8 @@ export function StakingTab() {
   const [validators, setValidators] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [naviRewards, setNaviRewards] = useState<{ symbol: string, amount: number }[]>([]);
+  const [rewardsLoading, setRewardsLoading] = useState(false);
 
   // Stake Form
   const [selectedValidator, setSelectedValidator] = useState('');
@@ -35,8 +38,22 @@ export function StakingTab() {
     }
   };
 
+  const fetchNaviRewards = async () => {
+    if (!state.activeAddress || !state.activeEnv) return;
+    setRewardsLoading(true);
+    try {
+      const data = await NaviService.getClaimableRewards(state.activeAddress, state.activeEnv);
+      setNaviRewards(data);
+    } catch (e) {
+      console.error('Navi rewards fetch failed:', e);
+    } finally {
+      setRewardsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStakes();
+    fetchNaviRewards();
   }, [state.activeAddress, state.activeEnv]);
 
   const handleAddStake = async () => {
@@ -107,6 +124,30 @@ export function StakingTab() {
     } catch (e) {
       addToast({ type: 'error', title: 'Unstake 失敗', message: String(e) });
       addLog('error', 'Staking', `❌ Unstake失敗: ${e}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAutoCompound = async () => {
+    if (!state.activeAddress || !state.activeEnv) return;
+    setActionLoading(true);
+    try {
+      addToast({ type: 'info', title: 'Auto-compound 実行中', message: 'Navi 報酬の回収と再投資をリクエストしています...' });
+      const result = await NaviService.autoCompound(
+        state.activeAddress,
+        state.activeEnv,
+        state.settings.sui_cli_path
+      );
+      
+      if (result.status === 'success') {
+        addToast({ type: 'success', title: '収穫完了！', message: `Digest: ${result.digest}` });
+        addLog('info', 'DeFi', `✅ Auto-compound成功: ${result.digest}`);
+        await fetchNaviRewards();
+        await refreshWallets();
+      }
+    } catch (e) {
+      addToast({ type: 'error', title: 'Auto-compound 失敗', message: String(e) });
     } finally {
       setActionLoading(false);
     }
@@ -185,6 +226,41 @@ export function StakingTab() {
               <span style={{ color: 'var(--color-sui)', fontWeight: 'bold' }}>{state.balance}</span>
             </li>
           </ul>
+        </div>
+
+        {/* ⚡ DeFi Yield セクション */}
+        <div className="card" style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-sui-light)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-md)' }}>
+            <div>
+              <h3 className="card-title" style={{ color: 'var(--color-sui)', marginBottom: 4 }}>⚡ DeFi Yield Optimization</h3>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>Navi Protocol 連携</p>
+            </div>
+            <div className={`badge ${rewardsLoading ? 'badge-medium' : 'badge-low'}`}>
+              {rewardsLoading ? '確認中...' : 'Active'}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 'var(--space-lg)' }}>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', display: 'block', marginBottom: 8 }}>未回収の報酬:</span>
+            {naviRewards.map(r => (
+              <div key={r.symbol} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{r.symbol}</span>
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-success)', fontWeight: 'bold' }}>+{r.amount.toFixed(4)}</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', background: 'linear-gradient(135deg, #00f2ff, #00d4ff)', border: 'none', boxShadow: '0 4px 15px rgba(0, 242, 255, 0.3)' }}
+            onClick={handleAutoCompound}
+            disabled={actionLoading}
+          >
+            {actionLoading ? '実行中...' : '⚡ Auto-compound 実行'}
+          </button>
+          <p style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 8, textAlign: 'center' }}>
+            ※報酬を Claim し、自動で SUI として再投資します
+          </p>
         </div>
       </div>
 

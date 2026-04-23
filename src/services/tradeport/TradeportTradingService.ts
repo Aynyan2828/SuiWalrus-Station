@@ -83,15 +83,47 @@ export class TradeportTradingService {
   }
 
   /**
-   * 将来の拡張用: 出品 (List NFT)
+   * NFT を出品 (List NFT)
    */
   static async listNft(
     nftId: string,
     priceMist: string,
     sellerAddress: string,
-    envName: string
+    envName: 'mainnet' | 'testnet' | 'devnet' | 'localnet',
+    keystorePath?: string
   ) {
-    // Phase 2 以降で実装
-    throw new Error('Not implemented yet in Phase 1');
+    try {
+      const sdk = await this.initClient();
+
+      console.log(`[TradeportTrading] 出品準備中: NFT ${nftId} for ${sellerAddress} at ${priceMist} MIST`);
+      
+      // 1. Tradeport SDK を使用して出品用の Transaction を作成
+      const tx = await sdk.createListings({
+        listings: [
+          {
+            nftId,
+            price: priceMist,
+          }
+        ],
+        walletAddress: sellerAddress,
+      });
+
+      if (!tx) {
+        throw new Error('出品トランザクションの構築に失敗しました。');
+      }
+
+      // 2. 署名と実行
+      const result = await executePtbAndReturnResult(
+        tx as any,
+        sellerAddress,
+        envName,
+        keystorePath
+      );
+
+      return result;
+    } catch (error) {
+      console.error('[TradeportTrading] List Flow Failed:', error);
+      throw error;
+    }
   }
 }

@@ -38,6 +38,8 @@ pub fn run() {
             settings::save_command_history,
             settings::load_wallet_metadata,
             settings::save_wallet_metadata,
+            settings::load_portfolio_history,
+            settings::save_portfolio_history,
             fs_utils::read_text_file,
             ai_proxy::call_ai_api,
             tradeport::call_tradeport_api,

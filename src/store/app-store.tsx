@@ -56,6 +56,8 @@ export interface AppState {
     isExecuting: boolean;
     status: 'running' | 'success' | 'error' | null;
   } | null;
+  // ポートフォリオ履歴
+  portfolioHistory: PortfolioSnapshot[];
 }
 
 const initialState: AppState = {
@@ -94,6 +96,7 @@ const initialState: AppState = {
   aiMode: 'guard',
   toasts: [],
   activeExecution: null,
+  portfolioHistory: [],
 };
 
 // ==========================================
@@ -123,7 +126,8 @@ type Action =
   | { type: 'REMOVE_TOAST'; id: string }
   | { type: 'START_EXECUTION'; command: string }
   | { type: 'ADD_REALTIME_LOG'; log: { message: string, level: 'stdout' | 'stderr' } }
-  | { type: 'END_EXECUTION'; status: 'success' | 'error' };
+  | { type: 'END_EXECUTION'; status: 'success' | 'error' }
+  | { type: 'SET_PORTFOLIO_HISTORY'; history: PortfolioSnapshot[] };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -188,16 +192,10 @@ function reducer(state: AppState, action: Action): AppState {
           logs: [...state.activeExecution.logs.slice(-50), { ...action.log, timestamp: new Date().toISOString() }]
         }
       };
-    case 'END_EXECUTION':
-      if (!state.activeExecution) return state;
-      return {
-        ...state,
-        activeExecution: {
-          ...state.activeExecution,
-          isExecuting: false,
-          status: action.status
         }
       };
+    case 'SET_PORTFOLIO_HISTORY':
+      return { ...state, portfolioHistory: action.history };
     default:
       return state;
   }
@@ -452,6 +450,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // ウォレットメタデータ読み込み
         const metadata = await settingsService.loadWalletMetadata();
         if (mounted) dispatch({ type: 'SET_WALLET_METADATA', metadata });
+
+        // ポートフォリオ履歴読み込み
+        const portfolioHistory = await settingsService.loadPortfolioHistory();
+        if (mounted) dispatch({ type: 'SET_PORTFOLIO_HISTORY', history: portfolioHistory });
       } catch (error) {
         console.error('初期化エラー:', error);
         if (mounted) dispatch({ type: 'SETTINGS_LOADED' });
@@ -482,6 +484,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [state.settingsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 24時間ごとの自動スナップショット記録
+  useEffect(() => {
+    if (!state.balance || !state.activeAddress) return;
+
+    const recordSnapshot = async () => {
+      const now = new Date();
+      const lastSnapshot = state.portfolioHistory[state.portfolioHistory.length - 1];
+      
+      // 最後に記録してから24時間以上経過しているかチェック
+      const shouldRecord = !lastSnapshot || 
+        (now.getTime() - new Date(lastSnapshot.timestamp).getTime()) > 24 * 60 * 60 * 1000;
+
+      if (shouldRecord) {
+        // "1.2345 SUI" などの文字列から数値を抽出
+        const balanceNum = parseFloat(state.balance.split(' ')[0]) || 0;
+        
+        const newSnapshot: PortfolioSnapshot = {
+          timestamp: now.toISOString(),
+          balance: balanceNum
+        };
+
+        const updatedHistory = [...state.portfolioHistory, newSnapshot].slice(-30); // 直近30日分
+        
+        try {
+          await settingsService.savePortfolioHistory(updatedHistory);
+          dispatch({ type: 'SET_PORTFOLIO_HISTORY', history: updatedHistory });
+          addLog('info', 'システム', `資産スナップショットを記録しました: ${balanceNum} SUI`);
+        } catch (e) {
+          console.error('スナップショット保存エラー:', e);
+        }
+      }
+    };
+
+    recordSnapshot();
+  }, [state.balance, state.activeAddress, state.portfolioHistory, addLog]);
 
   return (
     <AppContext.Provider value={{ state, dispatch, addLog, refreshWallets, refreshWalrus, refreshConnection, addToast, removeToast }}>

@@ -71,6 +71,13 @@ pub struct WalletMetadata {
     pub is_favorite: bool,
 }
 
+/// ポートフォリオのスナップショット（資産推移用）
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PortfolioSnapshot {
+    pub timestamp: String,
+    pub balance: f64,
+}
+
 /// 検出された設定パス
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DetectedPaths {
@@ -98,6 +105,10 @@ fn get_history_file() -> PathBuf {
 
 fn get_wallet_metadata_file() -> PathBuf {
     get_settings_path().join("wallet_metadata.json")
+}
+
+fn get_portfolio_history_file() -> PathBuf {
+    get_settings_path().join("portfolio_history.json")
 }
 
 impl AppSettings {
@@ -256,5 +267,31 @@ pub async fn save_wallet_metadata(metadata: Vec<WalletMetadata>) -> Result<(), S
         .map_err(|e| format!("メタデータシリアライズエラー: {}", e))?;
     fs::write(&path, data)
         .map_err(|e| format!("メタデータ書き込みエラー: {}", e))?;
+    Ok(())
+}
+
+/// ポートフォリオ履歴を読み込む
+#[tauri::command]
+pub async fn load_portfolio_history() -> Result<Vec<PortfolioSnapshot>, String> {
+    let path = get_portfolio_history_file();
+    if path.exists() {
+        let data = fs::read_to_string(&path)
+            .map_err(|e| format!("履歴ファイル読み込みエラー: {}", e))?;
+        let history: Vec<PortfolioSnapshot> =
+            serde_json::from_str(&data).unwrap_or_default();
+        Ok(history)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+/// ポートフォリオ履歴を保存する
+#[tauri::command]
+pub async fn save_portfolio_history(history: Vec<PortfolioSnapshot>) -> Result<(), String> {
+    let path = get_portfolio_history_file();
+    let data = serde_json::to_string_pretty(&history)
+        .map_err(|e| format!("履歴シリアライズエラー: {}", e))?;
+    fs::write(&path, data)
+        .map_err(|e| format!("履歴ファイル書き込みエラー: {}", e))?;
     Ok(())
 }

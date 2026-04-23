@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAppState } from '../../store/app-store';
 import * as sdkService from '../../services/sui-sdk/sui-sdk-service';
+import { TradeportTradingService } from '../../services/tradeport/TradeportTradingService';
 
 interface NftItem {
   objectId: string;
@@ -103,6 +104,45 @@ export function NftTab() {
     }
   };
 
+  const [listPrice, setListPrice] = useState('');
+  const [listing, setListing] = useState(false);
+
+  const handleListNft = async () => {
+    if (!selectedNft || !listPrice || !state.activeAddress) return;
+    if (!confirm(`${selectedNft.name} を ${listPrice} SUI で出品しますか？`)) return;
+
+    setListing(true);
+    try {
+      addLog('info', 'Tradeport', 'NFTを出品中...');
+      // SUI -> Mist (10^9) への安全な変換
+      const priceMist = BigInt(Math.floor(parseFloat(listPrice) * 1_000_000_000)).toString();
+      
+      const result = await TradeportTradingService.listNft(
+        selectedNft.objectId,
+        priceMist,
+        state.activeAddress,
+        state.activeEnv as any,
+        state.settings.sui_cli_path
+      );
+
+      if (result.status === 'success') {
+        addLog('info', 'Tradeport', `✅ 出品成功: ${result.digest}`);
+        alert('出品が完了しました！マーケットプレイスに反映されるまで数分かかる場合があります。');
+        setSelectedNft(null);
+        setDetail(null);
+        setListPrice('');
+        fetchNfts(); // 再取得
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (e) {
+      addLog('error', 'Tradeport', `❌ 出品失敗: ${e}`);
+      alert(`出品エラー: ${e}`);
+    } finally {
+      setListing(false);
+    }
+  };
+
   useEffect(() => {
     if (state.activeAddress && state.activeEnv) fetchNfts();
   }, [state.activeAddress, state.activeEnv]);
@@ -198,7 +238,39 @@ export function NftTab() {
             </div>
 
             <div className="modal-actions" style={{ marginTop: 'var(--space-lg)' }}>
-              <button className="btn btn-ghost" onClick={() => { setSelectedNft(null); setDetail(null); setTransferToAddress(''); }} disabled={transferring}>閉じる</button>
+              <button className="btn btn-ghost" onClick={() => { setSelectedNft(null); setDetail(null); setTransferToAddress(''); setListPrice(''); }} disabled={transferring || listing}>閉じる</button>
+            </div>
+
+            {/* 出品フォーム */}
+            <div style={{ marginTop: 'var(--space-md)', padding: 'var(--space-md)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-sui-light)', opacity: transferring ? 0.5 : 1 }}>
+              <h4 style={{ margin: '0 0 var(--space-sm) 0', fontSize: 'var(--text-sm)', color: 'var(--color-sui)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                🏷️ Tradeport で売り出す
+              </h4>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="出品価格 (SUI)"
+                    value={listPrice}
+                    onChange={e => setListPrice(e.target.value)}
+                    disabled={listing || transferring}
+                    style={{ width: '100%', paddingRight: '40px' }}
+                  />
+                  <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: 'var(--color-text-muted)' }}>SUI</span>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleListNft}
+                  disabled={listing || transferring || !listPrice}
+                  style={{ background: 'var(--color-sui)', borderColor: 'var(--color-sui)' }}
+                >
+                  {listing ? '実行中...' : '出品する'}
+                </button>
+              </div>
+              <p style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: 8 }}>
+                ※出品後はマーケットのスマートコントラクトによってロックされます
+              </p>
             </div>
           </div>
         </div>

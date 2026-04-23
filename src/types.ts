@@ -195,3 +195,11 @@ export interface ToastMessage {
   message?: string;
   duration?: number;
 }
+
+/**
+ * ポートフォリオのスナップショット（資産推移）
+ */
+export interface PortfolioSnapshot {
+  timestamp: string; // ISO形式
+  balance: number;   // SUI残高
+}

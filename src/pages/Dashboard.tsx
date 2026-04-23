@@ -2,9 +2,104 @@
 // ダッシュボード - 概要表示
 // ==========================================
 import { useAppState } from '../store/app-store';
+import { useState, useEffect } from 'react';
+import { AiAdvisorService } from '../services/AiAdvisorService';
+
+/**
+ * 資産推移を表示する軽量な SVG チャート
+ */
+function PortfolioChart({ history }: { history: any[] }) {
+  if (history.length < 2) {
+    return (
+      <div className="empty-state" style={{ height: 200, background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+        <p style={{ fontSize: 'var(--text-sm)' }}>📊 履歴データを蓄積中ばい（あと {2 - history.length} 日分）</p>
+      </div>
+    );
+  }
+
+  const width = 800;
+  const height = 200;
+  const padding = 40;
+
+  const balances = history.map(h => h.balance);
+  const minBalance = Math.min(...balances) * 0.95;
+  const maxBalance = Math.max(...balances) * 1.05;
+  const range = maxBalance - minBalance;
+
+  const points = history.map((h, i) => {
+    const x = (i / (history.length - 1)) * (width - padding * 2) + padding;
+    const y = height - ((h.balance - minBalance) / range) * (height - padding * 2) - padding;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const areaPath = `M ${padding},${height - padding} ` + points + ` L ${width - padding},${height - padding} Z`;
+
+  return (
+    <div style={{ width: '100%', overflowX: 'auto' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', minWidth: 600 }}>
+        {/* グリッド線 */}
+        {[0, 0.5, 1].map(v => (
+          <line key={v} x1={padding} y1={padding + (height - padding * 2) * v} x2={width - padding} y2={padding + (height - padding * 2) * v} 
+            stroke="var(--color-border)" strokeDasharray="4" />
+        ))}
+        
+        {/* エリアグラデーション */}
+        <defs>
+          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-sui)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--color-sui)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#chartGradient)" />
+        
+        {/* ライン */}
+        <polyline points={points} fill="none" stroke="var(--color-sui)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" 
+          style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 242, 255, 0.4))' }} />
+        
+        {/* ポイント */}
+        {history.map((h, i) => {
+          const x = (i / (history.length - 1)) * (width - padding * 2) + padding;
+          const y = height - ((h.balance - minBalance) / range) * (height - padding * 2) - padding;
+          return <circle key={i} cx={x} cy={y} r="4" fill="var(--color-sui)" stroke="white" strokeWidth="2" />;
+        })}
+
+        {/* ラベル */}
+        <text x={padding} y={height - 10} fontSize="10" fill="var(--color-text-muted)">{new Date(history[0].timestamp).toLocaleDateString()}</text>
+        <text x={width - padding} y={height - 10} fontSize="10" fill="var(--color-text-muted)" textAnchor="end">{new Date(history[history.length - 1].timestamp).toLocaleDateString()}</text>
+      </svg>
+    </div>
+  );
+}
 
 export function Dashboard() {
   const { state, dispatch, refreshConnection, refreshWallets } = useAppState();
+  const [aiInsight, setAiInsight] = useState<string>('');
+  const [loadingInsight, setLoadingInsight] = useState(false);
+
+  useEffect(() => {
+    async function getInsight() {
+      if (state.portfolioHistory.length > 0 && state.settings.ai_api_key) {
+        setLoadingInsight(true);
+        try {
+          const insight = await AiAdvisorService.generateInsight(
+            state.portfolioHistory,
+            state.history,
+            state.settings
+          );
+          setAiInsight(insight);
+        } catch (e) {
+          console.error('Insight generation failed:', e);
+        } finally {
+          setLoadingInsight(false);
+        }
+      } else if (!state.settings.ai_api_key) {
+        setAiInsight('AI APIキーを設定すると、ここでポートフォリオのアドバイスがもらえるばい！🦾✨');
+      } else {
+        setAiInsight('まだ資産データが溜まっとらんごたぁ。数日使い続けたら、僕が分析してアドバイスするばい！🦾✨');
+      }
+    }
+    getInsight();
+  }, [state.portfolioHistory.length, state.settings.ai_api_key, state.history.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeWallet = state.wallets.find(w => w.is_active);
 
@@ -47,6 +142,51 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* 🤖 AI アドバイザー・インサイト */}
+      <div style={{ marginBottom: 32, animation: 'slideIn 0.5s ease-out' }}>
+        <div className="card" style={{ 
+          background: 'var(--color-bg-secondary)', 
+          border: '1px solid var(--color-sui-light)',
+          position: 'relative',
+          padding: '24px 24px 24px 80px',
+          minHeight: 80,
+          display: 'flex',
+          alignItems: 'center',
+          boxShadow: '0 4px 20px rgba(0, 242, 255, 0.05)'
+        }}>
+          {/* AI アイコン */}
+          <div style={{
+            position: 'absolute',
+            left: 20,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 44,
+            height: 44,
+            background: 'var(--color-sui)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 24,
+            boxShadow: '0 0 15px var(--color-sui)'
+          }}>
+            🤖
+          </div>
+          
+          <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
+            <div style={{ fontWeight: 700, color: 'var(--color-sui)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              Walrus Agent Insight
+              {loadingInsight && <span className="cli-status-dot connected" style={{ width: 8, height: 8 }} />}
+            </div>
+            {loadingInsight ? (
+              <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>履歴ば詳細に分析中ばい... ちょっと待っとってね...</span>
+            ) : (
+              aiInsight || '今日は特にお知らせはなかばい。順調たい！'
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ステータスカード */}
       <div className="card-grid">
         <div className="stat-card">
@@ -82,6 +222,18 @@ export function Dashboard() {
         <div className="stat-card">
           <span className="stat-label">登録ウォレット数</span>
           <span className="stat-value">{state.wallets.length}</span>
+        </div>
+      </div>
+
+      {/* 📈 ポートフォリオ推移チャート */}
+      <div style={{ marginTop: 'var(--space-xl)' }}>
+        <div className="card" style={{ padding: 'var(--space-lg)' }}>
+          <div className="card-header" style={{ marginBottom: 'var(--space-md)' }}>
+            <h3 className="card-title">📈 Portfolio Growth (SUI)</h3>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>過去 30 日間の推移</span>
+          </div>
+          
+          <PortfolioChart history={state.portfolioHistory} />
         </div>
       </div>
 
