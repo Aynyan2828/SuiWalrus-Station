@@ -13,10 +13,19 @@ pub fn run() {
     loop {
         let env_path = current_dir.join(".env");
         if env_path.exists() {
-            match dotenvy::from_path(&env_path) {
-                Ok(_) => println!("✅ .env loaded from: {:?}", env_path),
-                Err(e) => eprintln!("⚠️ Failed to load .env from {:?}: {}", env_path, e),
+            // 手動でパースして強制的に set_var する (dotenvy::from_path は既存の変数を優先することがあるため)
+            if let Ok(content) = std::fs::read_to_string(&env_path) {
+                for line in content.lines() {
+                    let line = line.trim();
+                    if line.is_empty() || line.starts_with('#') { continue; }
+                    if let Some((key, value)) = line.split_once('=') {
+                        let key = key.trim();
+                        let value = value.trim().replace('"', ""); // クォーテーション除去
+                        std::env::set_var(key, value);
+                    }
+                }
             }
+            println!("✅ .env manually loaded and forced from: {:?}", env_path);
             break;
         }
         if !current_dir.pop() {
