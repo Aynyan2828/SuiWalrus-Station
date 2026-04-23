@@ -192,6 +192,14 @@ function reducer(state: AppState, action: Action): AppState {
           logs: [...state.activeExecution.logs.slice(-50), { ...action.log, timestamp: new Date().toISOString() }]
         }
       };
+    case 'END_EXECUTION':
+      if (!state.activeExecution) return state;
+      return {
+        ...state,
+        activeExecution: {
+          ...state.activeExecution,
+          isExecuting: false,
+          status: action.status
         }
       };
     case 'SET_PORTFOLIO_HISTORY':

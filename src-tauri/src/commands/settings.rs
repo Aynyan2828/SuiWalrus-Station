@@ -114,24 +114,39 @@ fn get_portfolio_history_file() -> PathBuf {
 impl AppSettings {
     /// 環境変数によるオーバーライド（環境変数があればそれを優先する）
     pub fn merge_with_env(&mut self) {
-        if let Ok(val) = std::env::var("SUI_CLI_PATH") { self.sui_cli_path = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("WALRUS_CLI_PATH") { self.walrus_cli_path = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("SITE_BUILDER_CLI_PATH") { self.site_builder_cli_path = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("AI_PROVIDER") { self.ai_provider = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("OPENAI_API_KEY") { self.ai_api_key = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("OPENAI_BASE_URL") { self.ai_base_url = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("OPENAI_MODEL") { self.ai_model = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("AI_DEFAULT_MODE") { self.ai_mode = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("LOG_LEVEL") { self.log_level = val.trim().to_string(); }
+        let update_if_env = |field: &mut String, env_name: &str| {
+            if let Ok(val) = std::env::var(env_name) {
+                let trimmed = val.trim();
+                if !trimmed.is_empty() {
+                    *field = trimmed.to_string();
+                }
+            }
+        };
+
+        update_if_env(&mut self.sui_cli_path, "SUI_CLI_PATH");
+        update_if_env(&mut self.walrus_cli_path, "WALRUS_CLI_PATH");
+        update_if_env(&mut self.site_builder_cli_path, "SITE_BUILDER_CLI_PATH");
+        update_if_env(&mut self.ai_provider, "AI_PROVIDER");
+        update_if_env(&mut self.ai_api_key, "OPENAI_API_KEY");
+        update_if_env(&mut self.ai_base_url, "OPENAI_BASE_URL");
+        update_if_env(&mut self.ai_model, "OPENAI_MODEL");
+        update_if_env(&mut self.ai_mode, "AI_DEFAULT_MODE");
+        update_if_env(&mut self.log_level, "LOG_LEVEL");
         
         // Tradeport 関連
         if let Ok(val) = std::env::var("TRADEPORT_ENABLED") { 
-            self.tradeport_enabled = val.trim().to_lowercase() == "true"; 
+            let trimmed = val.trim().to_lowercase();
+            if !trimmed.is_empty() {
+                self.tradeport_enabled = trimmed == "true";
+            }
         }
-        if let Ok(val) = std::env::var("TRADEPORT_API_KEY") { self.tradeport_api_key = val.trim().to_string(); }
-        if let Ok(val) = std::env::var("TRADEPORT_API_USER") { self.tradeport_api_user = val.trim().to_string(); }
+        update_if_env(&mut self.tradeport_api_key, "TRADEPORT_API_KEY");
+        update_if_env(&mut self.tradeport_api_user, "TRADEPORT_API_USER");
         if let Ok(val) = std::env::var("TRADEPORT_AGENT_ENABLED") { 
-            self.tradeport_agent_enabled = val.trim().to_lowercase() == "true"; 
+            let trimmed = val.trim().to_lowercase();
+            if !trimmed.is_empty() {
+                self.tradeport_agent_enabled = trimmed == "true";
+            }
         }
     }
 }
