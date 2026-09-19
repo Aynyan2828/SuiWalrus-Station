@@ -93,7 +93,19 @@ async function resolveKeystorePath(): Promise<string> {
     const { detectConfigPaths } = await import('../settings-service');
     const paths = await detectConfigPaths();
     if (paths.sui_keystore) return paths.sui_keystore;
-    if (paths.sui_config_dir) return `${paths.sui_config_dir}\\sui.keystore`;
+    if (paths.sui_config_dir) return joinPath(paths.sui_config_dir, 'sui.keystore');
   } catch { /* fallthrough */ }
-  return 'C:\\Users\\Public\\.sui\\sui_config\\sui.keystore';
+  return isWindows()
+    ? 'C:\\Users\\Public\\.sui\\sui_config\\sui.keystore'
+    : '~/.sui/sui_config/sui.keystore';
+}
+
+/** OS に合わせた区切り文字でパスを連結する */
+function joinPath(dir: string, file: string): string {
+  const sep = dir.includes('\\') ? '\\' : '/';
+  return dir.endsWith(sep) ? `${dir}${file}` : `${dir}${sep}${file}`;
+}
+
+function isWindows(): boolean {
+  return typeof navigator !== 'undefined' && /Win/i.test(navigator.platform || navigator.userAgent);
 }

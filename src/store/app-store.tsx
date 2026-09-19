@@ -5,7 +5,7 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback } 
 import type {
   Page, AppSettings, WalletInfo, WalletMetadata,
   ConnectionStatus, LogEntry, CommandHistoryEntry, AiMode,
-  DetectedPaths, TokenBalance, ToastMessage
+  DetectedPaths, TokenBalance, ToastMessage, PortfolioSnapshot
 } from '../types';
 import * as settingsService from '../services/settings-service';
 import * as walletService from '../services/wallet-service';
@@ -65,9 +65,10 @@ const initialState: AppState = {
   connection: null,
   detectedPaths: null,
   settings: {
-    sui_cli_path: 'C:\\ProgramData\\chocolatey\\bin\\sui',
-    walrus_cli_path: 'C:\\ProgramData\\walrus\\walrus',
-    site_builder_cli_path: 'C:\\ProgramData\\walrus\\site-builder.exe',
+    // 空のままなら backend (get_settings) が OS ごとの既定パスを返す
+    sui_cli_path: '',
+    walrus_cli_path: '',
+    site_builder_cli_path: '',
     site_builder_config_path: '',
     ai_provider: 'openai',
     ai_api_key: '',

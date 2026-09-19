@@ -61,7 +61,7 @@ export function LogPanel() {
                   {log.message}
                   {log.cli_path && (
                     <span style={{ color: 'var(--color-text-muted)', marginLeft: 8, fontSize: '10px' }}>
-                      ({log.cli_path.split('\\').pop()})
+                      ({log.cli_path.split(/[\\/]/).pop()})
                     </span>
                   )}
                 </div>

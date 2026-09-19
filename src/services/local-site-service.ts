@@ -132,6 +132,9 @@ async function processBlock(site: { name?: string, source?: string }, sites: Loc
 }
 
 function absoluteSourcePathToWindows(path: string): string {
+  // Windows のドライブレター始まり (C:/...) だけバックスラッシュに戻す。
+  // macOS / Linux の "/..." はそのまま使う。
+  if (!/^[a-zA-Z]:\//.test(path)) return path.replace(/\/+/g, '/');
   return path.replace(/\//g, '\\').replace(/\\+/g, '\\');
 }
 

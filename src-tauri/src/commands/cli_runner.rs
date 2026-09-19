@@ -5,6 +5,7 @@ use tokio::process::Command;
 use tokio::time::{timeout, Duration};
 use regex::Regex;
 use std::process::Stdio;
+use super::platform::resolve_cli_path;
 
 /// CLI実行結果の構造体
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -45,12 +46,9 @@ pub async fn execute_command(
 ) -> Result<CliResult, String> {
     // CLIパスの決定
     let cli_path = match cli_type.as_str() {
-        "sui" => sui_cli_path
-            .unwrap_or_else(|| r"C:\ProgramData\chocolatey\bin\sui".to_string()),
-        "walrus" => walrus_cli_path
-            .unwrap_or_else(|| r"C:\ProgramData\walrus\walrus".to_string()),
-        "site-builder" => site_builder_cli_path
-            .unwrap_or_else(|| r"C:\ProgramData\walrus\site-builder.exe".to_string()),
+        "sui" => resolve_cli_path(sui_cli_path, "sui"),
+        "walrus" => resolve_cli_path(walrus_cli_path, "walrus"),
+        "site-builder" => resolve_cli_path(site_builder_cli_path, "site-builder"),
         _ => return Err(format!("未対応のCLIタイプ: {}", cli_type)),
     };
 
@@ -176,12 +174,9 @@ pub async fn check_cli_connection(
     walrus_cli_path: Option<String>,
     site_builder_cli_path: Option<String>,
 ) -> Result<ConnectionStatus, String> {
-    let sui_path = sui_cli_path
-        .unwrap_or_else(|| r"C:\ProgramData\chocolatey\bin\sui".to_string());
-    let walrus_path = walrus_cli_path
-        .unwrap_or_else(|| r"C:\ProgramData\walrus\walrus".to_string());
-    let site_builder_path = site_builder_cli_path
-        .unwrap_or_else(|| r"C:\ProgramData\walrus\site-builder.exe".to_string());
+    let sui_path = resolve_cli_path(sui_cli_path, "sui");
+    let walrus_path = resolve_cli_path(walrus_cli_path, "walrus");
+    let site_builder_path = resolve_cli_path(site_builder_cli_path, "site-builder");
 
     // Sui CLI バージョン確認
     let (sui_available, sui_version) = match Command::new(&sui_path)

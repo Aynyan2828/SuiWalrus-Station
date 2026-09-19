@@ -105,7 +105,7 @@ export function SettingsPage() {
                 style={{ flex: 1 }}
                 value={localSettings.sui_cli_path}
                 onChange={(e) => update('sui_cli_path', e.target.value)}
-                placeholder="C:\ProgramData\chocolatey\bin\sui"
+                placeholder="例: ~/.local/bin/sui / /opt/homebrew/bin/sui / C:\ProgramData\chocolatey\bin\sui"
               />
               <button className="btn btn-ghost" onClick={() => selectPath('sui_cli_path', false)} title="ファイルを選択">
                 📂
@@ -126,7 +126,7 @@ export function SettingsPage() {
                 style={{ flex: 1 }}
                 value={localSettings.walrus_cli_path}
                 onChange={(e) => update('walrus_cli_path', e.target.value)}
-                placeholder="C:\ProgramData\walrus\walrus"
+                placeholder="例: ~/.local/bin/walrus / C:\ProgramData\walrus\walrus"
               />
               <button className="btn btn-ghost" onClick={() => selectPath('walrus_cli_path', false)} title="ファイルを選択">
                 📂
@@ -147,7 +147,7 @@ export function SettingsPage() {
                 style={{ flex: 1 }}
                 value={localSettings.site_builder_cli_path}
                 onChange={(e) => update('site_builder_cli_path', e.target.value)}
-                placeholder="C:\ProgramData\walrus\site-builder.exe"
+                placeholder="例: ~/.local/bin/site-builder / C:\ProgramData\walrus\site-builder.exe"
               />
               <button className="btn btn-ghost" onClick={() => selectPath('site_builder_cli_path', false)} title="ファイルを選択">
                 📂
@@ -163,7 +163,7 @@ export function SettingsPage() {
                 style={{ flex: 1 }}
                 value={localSettings.site_builder_config_path}
                 onChange={(e) => update('site_builder_config_path', e.target.value)}
-                placeholder="C:\Users\PC USER\...\site-config.yaml"
+                placeholder="例: ~/walrus-sites/site-config.yaml"
               />
               <button className="btn btn-ghost" onClick={() => selectPath('site_builder_config_path', false)} title="ファイルを選択">
                 📂

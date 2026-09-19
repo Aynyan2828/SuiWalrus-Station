@@ -15,10 +15,13 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   return invoke<void>('save_settings', { settings });
 }
 
-/** 接続設定を取得 */
-export async function getDetectedPaths(): Promise<DetectedPaths> {
-  return invoke<DetectedPaths>('get_detected_paths');
+/** Sui/Walrus の設定ディレクトリ・keystore を自動検出（Rust: detect_config_paths） */
+export async function detectConfigPaths(): Promise<DetectedPaths> {
+  return invoke<DetectedPaths>('detect_config_paths');
 }
+
+/** 旧名エイリアス（互換用） */
+export const getDetectedPaths = detectConfigPaths;
 
 /** 実行履歴を読み込み */
 export async function loadCommandHistory(): Promise<CommandHistoryEntry[]> {

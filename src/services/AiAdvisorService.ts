@@ -43,18 +43,20 @@ ${recentTx}
 
     try {
       // Tauri 経由で Rust プロキシを呼び出し、AI API を叩く
+      // 他サービス（ai-guard / rule-parser）と同じ引数形で Rust プロキシを叩く
       const response: any = await invoke('call_ai_api', {
-        request: {
-          provider: settings.ai_provider,
-          api_key: settings.ai_api_key,
-          base_url: settings.ai_base_url,
-          model: settings.ai_model,
-          prompt: prompt,
-        }
+        baseUrl: settings.ai_base_url,
+        apiKey: settings.ai_api_key,
+        model: settings.ai_model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.5,
+        maxTokens: 400,
       });
 
-      // API のレスポンス形式に合わせてパース
-      const content = typeof response === 'string' ? response : (response.content || response.text || "");
+      // OpenAI 互換レスポンス (choices[0].message.content) を優先してパース
+      const content: string = typeof response === 'string'
+        ? response
+        : (response?.choices?.[0]?.message?.content || response.content || response.text || "");
       
       return content.trim() || "今日はちょっと考えがまとまらんごたぁ。また明日聞いてね！🦾✨";
     } catch (error) {

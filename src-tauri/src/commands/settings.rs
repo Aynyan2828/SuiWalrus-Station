@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use super::platform::default_cli_path;
 
 /// アプリ設定
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -25,9 +26,9 @@ pub struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            sui_cli_path: r"C:\ProgramData\chocolatey\bin\sui".to_string(),
-            walrus_cli_path: r"C:\ProgramData\walrus\walrus".to_string(),
-            site_builder_cli_path: r"C:\ProgramData\walrus\site-builder.exe".to_string(),
+            sui_cli_path: default_cli_path("sui"),
+            walrus_cli_path: default_cli_path("walrus"),
+            site_builder_cli_path: default_cli_path("site-builder"),
             site_builder_config_path: String::new(),
             ai_provider: "openai".to_string(),
             ai_api_key: String::new(),
@@ -164,9 +165,20 @@ pub async fn get_settings() -> Result<AppSettings, String> {
         AppSettings::default()
     };
 
+    // 別OSで保存した settings.json（例: Windows の C:\ProgramData…）を引き継いだ場合、
+    // 実在せんパスは OS ごとの既定に戻す
+    let fix_if_missing = |field: &mut String, name: &str| {
+        if !std::path::Path::new(field.as_str()).is_file() {
+            *field = default_cli_path(name);
+        }
+    };
+    fix_if_missing(&mut settings.sui_cli_path, "sui");
+    fix_if_missing(&mut settings.walrus_cli_path, "walrus");
+    fix_if_missing(&mut settings.site_builder_cli_path, "site-builder");
+
     // 環境変数があれば上書き
     settings.merge_with_env();
-    
+
     Ok(settings)
 }
 
